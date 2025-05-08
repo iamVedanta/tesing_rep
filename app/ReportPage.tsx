@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import 'leaflet/dist/leaflet.css';
 
-// Dynamically import the MapClient component to avoid SSR issues
 const MapClient = dynamic(() => import('./MapClient'), { ssr: false });
 
 const ReportPage = () => {
@@ -15,18 +14,10 @@ const ReportPage = () => {
   const [description, setDescription] = useState('');
   const [submitMessage, setSubmitMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [isClient, setIsClient] = useState(false);  // To track client-side rendering
 
-  // Fetch the user ID from query params
   const searchParams = useSearchParams();
   const userId = searchParams.get('userid');
 
-  // Set up to detect when the component is rendered on the client
-  useEffect(() => {
-    setIsClient(true);  // This ensures the component only runs on the client-side
-  }, []);
-
-  // Handle location search
   const handleSearch = async () => {
     if (!searchQuery) return;
     try {
@@ -48,7 +39,6 @@ const ReportPage = () => {
     }
   };
 
-  // Handle using the current location
   const handleUseMyLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -67,7 +57,6 @@ const ReportPage = () => {
     }
   };
 
-  // Handle form submission
   const handleSubmit = async () => {
     if (!userId || !description || !selectedLocation) {
       setSubmitMessage('Please fill all fields and select location.');
@@ -102,11 +91,6 @@ const ReportPage = () => {
       setSubmitting(false);
     }
   };
-
-  // Render the component only when it's client-side
-  if (!isClient) {
-    return null;  // Prevent rendering SSR-generated content on the server
-  }
 
   return (
     <div className="min-h-screen bg-white text-gray-900 p-4 md:p-6 max-w-xl mx-auto">
