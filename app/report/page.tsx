@@ -91,10 +91,12 @@ const ReportPage = () => {
 
       await axios.post(URL, body, { headers })
         .then((res) => {
+          console.log(res);
           setSubmitMessage("Report submitted successfully.");
           setDescription("");
         })
         .catch((err) => {
+          console.log(err);
           setSubmitMessage("Failed to submit report");
         })
 
