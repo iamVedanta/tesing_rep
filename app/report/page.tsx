@@ -23,6 +23,8 @@ const ReportPage = () => {
   const [isClient, setIsClient] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
+  console.log(userId);
+
   useEffect(() => {
     setIsClient(true);
   }, []);
