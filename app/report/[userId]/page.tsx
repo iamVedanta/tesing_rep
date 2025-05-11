@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, use } from "react";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
 import axios from "axios";
@@ -14,20 +14,19 @@ export default function ReportPage({
 }: {
   params: Promise<{ userId: string }>;
 }) {
-  const { userId } = React.use(params);
+  const { userId } = use(params); // ✅ Unwrap the promise here
 
   const [selectedLocation, setSelectedLocation] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchError, setSearchError] = useState("");
   const [description, setDescription] = useState("");
   const [submitMessage, setSubmitMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isClient, setIsClient] = useState(false);
-
-  console.log("User ID from route:", userId);
 
   useEffect(() => {
     setIsClient(true);
@@ -120,6 +119,10 @@ export default function ReportPage({
       <h1 className="text-2xl md:text-3xl font-bold mb-4 text-emerald-700">
         Report a Location
       </h1>
+
+      <p className="text-sm text-gray-600 mb-4">
+        Reporting as: <span className="font-semibold">{userId}</span>
+      </p>
 
       <div className="flex flex-col sm:flex-row gap-2 mb-2">
         <input
