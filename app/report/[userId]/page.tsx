@@ -3,14 +3,19 @@
 import React, { useState, useEffect, Suspense } from "react";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
-import UserIdWrapper from "@/components/UserIdWrapper";
-import axios from 'axios';
+import axios from "axios";
 
 const MapClient = dynamic(() => import("@/components/MapClient"), {
   ssr: false,
 });
 
-const ReportPage = () => {
+export default function ReportPage({
+  params,
+}: {
+  params: Promise<{ userId: string }>;
+}) {
+  const { userId } = React.use(params);
+
   const [selectedLocation, setSelectedLocation] = useState<{
     lat: number;
     lng: number;
@@ -21,9 +26,8 @@ const ReportPage = () => {
   const [submitMessage, setSubmitMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
 
-  console.log(userId);
+  console.log("User ID from route:", userId);
 
   useEffect(() => {
     setIsClient(true);
@@ -71,14 +75,13 @@ const ReportPage = () => {
   };
 
   const handleSubmit = async () => {
-    const validUserId = "00000000-0000-0000-0000-000000000000";
     if (!description || !selectedLocation) {
       setSubmitMessage("Please fill all fields and select location.");
       return;
     }
 
     const body = {
-      userid: validUserId,
+      userid: userId,
       description,
       latt: selectedLocation.lat,
       long: selectedLocation.lng,
@@ -88,10 +91,11 @@ const ReportPage = () => {
       setSubmitting(true);
       const URL = "https://yashdb18-hersafety.hf.space/app/save_review";
       const headers = {
-        'Content-Type': 'application/json',
-      }
+        "Content-Type": "application/json",
+      };
 
-      await axios.post(URL, body, { headers })
+      await axios
+        .post(URL, body, { headers })
         .then((res) => {
           console.log(res);
           setSubmitMessage("Report submitted successfully.");
@@ -100,8 +104,7 @@ const ReportPage = () => {
         .catch((err) => {
           console.log(err);
           setSubmitMessage("Failed to submit report");
-        })
-
+        });
     } catch (error) {
       console.error(error);
       setSubmitMessage("An error occurred while submitting.");
@@ -117,10 +120,6 @@ const ReportPage = () => {
       <h1 className="text-2xl md:text-3xl font-bold mb-4 text-emerald-700">
         Report a Location
       </h1>
-
-      <Suspense fallback={null}>
-        <UserIdWrapper onUserId={setUserId} />
-      </Suspense>
 
       <div className="flex flex-col sm:flex-row gap-2 mb-2">
         <input
@@ -177,8 +176,9 @@ const ReportPage = () => {
 
         <div className="flex flex-col gap-2">
           <button
-            className={`bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-4 rounded w-full ${submitting ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+            className={`bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-4 rounded w-full ${
+              submitting ? "opacity-50 cursor-not-allowed" : ""
+            }`}
             onClick={handleSubmit}
             disabled={submitting}
           >
@@ -193,6 +193,4 @@ const ReportPage = () => {
       </div>
     </div>
   );
-};
-
-export default ReportPage;
+}
