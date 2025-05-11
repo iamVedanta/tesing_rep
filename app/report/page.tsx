@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
 import UserIdWrapper from "@/components/UserIdWrapper";
+import axios from 'axios';
 
 const MapClient = dynamic(() => import("@/components/MapClient"), {
   ssr: false,
@@ -83,21 +84,20 @@ const ReportPage = () => {
 
     try {
       setSubmitting(true);
-      const response = await fetch(
-        "https://yashdb18-hersafety.hf.space/app/save_review",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        }
-      );
-
-      if (response.ok) {
-        setSubmitMessage("Report submitted successfully.");
-        setDescription("");
-      } else {
-        setSubmitMessage("Failed to submit the report.");
+      const URL = "https://yashdb18-hersafety.hf.space/app/save_review";
+      const headers = {
+        'Content-Type': 'application/json',
       }
+
+      await axios.post(URL, body, { headers })
+        .then((res) => {
+          setSubmitMessage("Report submitted successfully.");
+          setDescription("");
+        })
+        .catch((err) => {
+          setSubmitMessage("Failed to submit report");
+        })
+
     } catch (error) {
       console.error(error);
       setSubmitMessage("An error occurred while submitting.");
@@ -173,9 +173,8 @@ const ReportPage = () => {
 
         <div className="flex flex-col gap-2">
           <button
-            className={`bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-4 rounded w-full ${
-              submitting ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-4 rounded w-full ${submitting ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             onClick={handleSubmit}
             disabled={submitting}
           >
