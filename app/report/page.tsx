@@ -69,7 +69,7 @@ const ReportPage = () => {
   };
 
   const handleSubmit = async () => {
-    const validUserId = userId || "00000000-0000-0000-0000-000000000000";
+    const validUserId = "00000000-0000-0000-0000-000000000000";
     if (!description || !selectedLocation) {
       setSubmitMessage("Please fill all fields and select location.");
       return;
