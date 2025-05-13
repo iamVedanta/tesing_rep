@@ -15,6 +15,11 @@ export default function HomePage() {
           Report a Location
         </button>
       </Link>
+      <Link href="/contributions">
+        <button className="bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-6 rounded">
+          My Contributions
+        </button>
+      </Link>
     </main>
   );
 }
