@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense, use } from "react";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
-import axios from "axios";
+import { useSearchParams } from "next/navigation";
 
 const MapClient = dynamic(() => import("@/components/MapClient"), {
   ssr: false,
@@ -14,25 +14,40 @@ export default function ReportPage({
 }: {
   params: Promise<{ userId: string }>;
 }) {
-  const { userId } = use(params); // ✅ Unwrap the promise here
+  // ⬇️ Unwrap the Promise using React's experimental hook
+  const { userId } = use(params);
+
+  const searchParams = useSearchParams();
+
+  const latParam = searchParams.get("lat");
+  const lngParam = searchParams.get("lng");
+
+  const latFromQuery = latParam ? parseFloat(latParam) : null;
+  const lngFromQuery = lngParam ? parseFloat(lngParam) : null;
 
   const [selectedLocation, setSelectedLocation] = useState<{
     lat: number;
     lng: number;
-  } | null>(null);
+  } | null>(
+    latFromQuery && lngFromQuery
+      ? { lat: latFromQuery, lng: lngFromQuery }
+      : null
+  );
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchError, setSearchError] = useState("");
   const [description, setDescription] = useState("");
   const [submitMessage, setSubmitMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
+  // OSM Search states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchError, setSearchError] = useState("");
+
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const handleSearch = async () => {
+  const handleOSMSearch = async () => {
     if (!searchQuery) return;
     try {
       const fullQuery = `${searchQuery}, India`;
@@ -52,24 +67,6 @@ export default function ReportPage({
     } catch (err) {
       console.error(err);
       setSearchError("Search failed. Please try again.");
-    }
-  };
-
-  const handleUseMyLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setSelectedLocation({ lat: latitude, lng: longitude });
-          setSearchError("");
-        },
-        (err) => {
-          console.error(err);
-          setSearchError("Failed to access your location.");
-        }
-      );
-    } else {
-      setSearchError("Geolocation is not supported in this browser.");
     }
   };
 
@@ -93,22 +90,24 @@ export default function ReportPage({
         "Content-Type": "application/json",
       };
 
-      await axios
-        .post(URL, body, { headers })
-        .then((res) => {
-          console.log(res);
-          setSubmitMessage("Report submitted successfully.");
-          setDescription("");
-        })
-        .catch((err) => {
-          console.log(err);
-          setSubmitMessage("Failed to submit report");
-        });
+      await fetch(URL, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      });
+      setSubmitMessage("Report submitted successfully.");
+      setDescription("");
     } catch (error) {
       console.error(error);
-      setSubmitMessage("An error occurred while submitting.");
+      setSubmitMessage("Failed to submit report.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSetHomeLocation = () => {
+    if (latFromQuery && lngFromQuery) {
+      setSelectedLocation({ lat: latFromQuery, lng: lngFromQuery });
     }
   };
 
@@ -124,32 +123,46 @@ export default function ReportPage({
         Reporting as: <span className="font-semibold">{userId}</span>
       </p>
 
-      <div className="flex flex-col sm:flex-row gap-2 mb-2">
-        <input
-          type="text"
-          placeholder="Search location"
-          className="text-black p-2 rounded border w-full"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <button
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded"
-          onClick={handleSearch}
-        >
-          Search
-        </button>
-      </div>
-
-      {searchError && (
-        <p className="text-red-500 font-medium mb-2">{searchError}</p>
+      {latFromQuery && lngFromQuery ? (
+        <div className="flex flex-col gap-2 mb-4">
+          <p className="text-blue-600 font-medium">
+            From URL Query: {latFromQuery.toFixed(5)}, {lngFromQuery.toFixed(5)}
+          </p>
+          <button
+            onClick={handleSetHomeLocation}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded"
+          >
+            Set as Home Location
+          </button>
+        </div>
+      ) : (
+        <p className="text-red-500 font-medium mb-4">
+          No latitude/longitude in query params.
+        </p>
       )}
 
-      <button
-        className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded mb-4 w-full"
-        onClick={handleUseMyLocation}
-      >
-        Use My Location
-      </button>
+      {/* Search bar above the map */}
+      <div className="space-y-2 mb-4">
+        <label className="block font-semibold">Search Location (OSM)</label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Search location"
+            className="text-black p-2 rounded border w-full"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded"
+            onClick={handleOSMSearch}
+          >
+            Search
+          </button>
+        </div>
+        {searchError && (
+          <p className="text-red-500 font-medium">{searchError}</p>
+        )}
+      </div>
 
       <Suspense fallback={<div>Loading Map...</div>}>
         <MapClient
@@ -177,22 +190,21 @@ export default function ReportPage({
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <button
-            className={`bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-4 rounded w-full ${
-              submitting ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            onClick={handleSubmit}
-            disabled={submitting}
-          >
-            {submitting ? "Submitting..." : "Submit Report"}
-          </button>
-          {submitMessage && (
-            <p className="text-sm font-medium text-center text-gray-700">
-              {submitMessage}
-            </p>
-          )}
-        </div>
+        <button
+          className={`bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-4 rounded w-full ${
+            submitting ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          onClick={handleSubmit}
+          disabled={submitting}
+        >
+          {submitting ? "Submitting..." : "Submit Report"}
+        </button>
+
+        {submitMessage && (
+          <p className="text-sm font-medium text-center text-gray-700">
+            {submitMessage}
+          </p>
+        )}
       </div>
     </div>
   );
