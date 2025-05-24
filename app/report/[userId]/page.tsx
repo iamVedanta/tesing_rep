@@ -85,7 +85,7 @@ export default function ReportPage({
 
     try {
       setSubmitting(true);
-      const URL = "https://yashdb18-hersafety.hf.space/app/save_review";
+      const URL = "https://vedanta-testmodel.hf.space/app/buffer_review";
       const headers = {
         "Content-Type": "application/json",
       };
